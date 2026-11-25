@@ -1,6 +1,9 @@
 # Procesado por envsubst al iniciar el contenedor (imagen oficial de nginx).
 # Solo se sustituyen variables de entorno definidas (API_KEY); las de nginx ($http_...) quedan intactas.
 
+# Las claves de 64+ caracteres no caben en el bucket por defecto (64) -> nginx no arranca.
+map_hash_bucket_size 256;
+
 map $http_x_api_key $auth_ok {
     default      0;
     "${API_KEY}" 1;
@@ -33,7 +36,6 @@ server {
     server_tokens off;
     client_max_body_size 0;          # docker build / load / cp sin límite
 
-    limit_req zone=badauth burst=5 nodelay;
     limit_req_status 429;
 
     location = /_health {
@@ -41,10 +43,23 @@ server {
         return 200 "ok\n";
     }
 
+    # Orden de fases nginx: preaccess (limit_req) -> access (auth_request) -> content (proxy).
+    # Un 'if/return' iría en la fase rewrite, ANTES de limit_req, y el rate limit nunca actuaría.
+    location = /_auth {
+        internal;
+        if ($auth_ok = 0) { return 401; }
+        return 204;
+    }
+
+    location @unauthorized {
+        default_type application/json;
+        return 401 '{"message":"Unauthorized"}';
+    }
+
     location / {
-        if ($auth_ok = 0) {
-            return 401 '{"message":"Unauthorized"}';
-        }
+        limit_req zone=badauth burst=5 nodelay;
+        auth_request /_auth;
+        error_page 401 = @unauthorized;
 
         proxy_pass http://unix:/var/run/docker.sock:;
         proxy_http_version 1.1;

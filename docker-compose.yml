@@ -5,6 +5,17 @@ services:
     restart: unless-stopped
     environment:
       API_KEY: ${API_KEY:?Define API_KEY en .env}
+    # Los workers de nginx corren como 'nginx'; el socket es root:docker (Linux) o root:root
+    # (Docker Desktop) con permisos 660. Se agrega 'nginx' al grupo dueño del socket.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        gid=$$(stat -c %g /var/run/docker.sock)
+        grp=$$(getent group "$$gid" | cut -d: -f1)
+        [ -n "$$grp" ] || { grp=dockersock; addgroup -g "$$gid" "$$grp"; }
+        addgroup nginx "$$grp" 2>/dev/null || true
+        exec /docker-entrypoint.sh nginx -g 'daemon off;'
     ports:
       - "${PROXY_PORT:-2376}:2376"
     volumes:

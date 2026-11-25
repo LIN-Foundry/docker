@@ -72,3 +72,25 @@ curl -k -H "X-Api-Key: TU_CLAVE" https://SERVIDOR:2376/version  # 200
 
 - Quien tenga la clave tiene control total del host (equivale a root). Trátala como una contraseña de root.
 - Nunca subas `.env` ni `certs/` a git (están en `.gitignore`).
+
+## Cliente de prueba (.NET)
+
+`client/` es una consola .NET 10 que valida un proxy instalado: 401 sin clave / clave incorrecta,
+200 con clave, y con Docker.DotNet (`Docker.DotNet.Enhanced`) `version`, listar contenedores y un
+`exec` (stream hijacked).
+
+```bash
+cd client
+dotnet run -- --endpoint https://IP:2376 --key CLAVE --ca fullchain.pem   # valida el certificado
+dotnet run -- --endpoint https://IP:2376 --key CLAVE --insecure           # sin validar (solo pruebas)
+```
+
+Cómo conectarse con Docker.DotNet (v4) desde tu código:
+
+```csharp
+using var docker = new DockerClientBuilder()
+    .WithEndpoint(new Uri("https://IP:2376"))
+    .WithAuthProvider(new ApiKeyTlsAuthProvider(validator))   // activa HTTPS + valida el cert (ver Program.cs)
+    .WithHeader("X-Api-Key", apiKey)
+    .Build();
+```
