@@ -55,16 +55,38 @@ curl -k -H "X-Api-Key: TU_CLAVE" https://SERVIDOR:2376/version  # 200
 ## Clientes
 
 - **Docker CLI**: en `~/.docker/config.json` → `"HttpHeaders": { "X-Api-Key": "TU_CLAVE" }`.
-- **.NET (Docker.DotNet)**: `defaultHttpRequestHeaders` en `DockerClientConfiguration`.
+- **.NET (Docker.DotNet.Enhanced v4)**: `.WithHeader("X-Api-Key", ...)` en `DockerClientBuilder` (ver [Cliente de prueba](#cliente-de-prueba-net)).
 - **HTTP directo**: cabecera `X-Api-Key` en cada petición.
+
+## Cambiar la API key
+
+Reglas: solo letras, números, `-` y `_`; mínimo 32 caracteres. Si la verificación falla,
+se restaura la clave anterior automáticamente.
+
+**Clave manual (la pide sin mostrarla y no queda en el historial):**
+
+```bash
+read -s -p "Nueva API key: " K && echo && curl -fsSL https://raw.githubusercontent.com/LIN-Foundry/docker/main/set-key.sh | sudo API_KEY="$K" sh; unset K
+```
+
+**Clave manual en el mismo comando** (queda en el historial de la terminal):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LIN-Foundry/docker/main/set-key.sh | sudo sh -s -- TU_CLAVE_AQUI
+```
+
+**Clave aleatoria (64 caracteres):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/LIN-Foundry/docker/main/set-key.sh | sudo sh
+```
 
 ## Operación
 
 | Tarea | Comando |
 |---|---|
 | Ver la clave | `sudo grep API_KEY /opt/docker-api-proxy/.env` |
-| Rotar la clave (aleatoria) | `curl -fsSL https://raw.githubusercontent.com/LIN-Foundry/docker/main/set-key.sh \| sudo sh` |
-| Poner una clave manual | `curl -fsSL https://raw.githubusercontent.com/LIN-Foundry/docker/main/set-key.sh \| sudo sh -s -- MI_CLAVE` (A-Z a-z 0-9 - _, mín. 32) |
+| Cambiar la clave | ver [Cambiar la API key](#cambiar-la-api-key) |
 | Varias claves | agregar `"clave" 1;` en el `map` de `templates/default.conf.template` |
 | Logs / intentos fallidos | `docker logs docker-api-proxy \| grep ' 401 '` |
 | Desinstalar | `cd /opt/docker-api-proxy && sudo docker compose down && sudo rm -rf /opt/docker-api-proxy` |
