@@ -1,0 +1,23 @@
+services:
+  docker-api-proxy:
+    image: nginx:1.27-alpine
+    container_name: docker-api-proxy
+    restart: unless-stopped
+    environment:
+      API_KEY: ${API_KEY:?Define API_KEY en .env}
+    ports:
+      - "${PROXY_PORT:-2376}:2376"
+    volumes:
+      - ./templates:/etc/nginx/templates:ro
+      - ./certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://127.0.0.1:2376/_health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
