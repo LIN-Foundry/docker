@@ -63,7 +63,8 @@ curl -k -H "X-Api-Key: TU_CLAVE" https://SERVIDOR:2376/version  # 200
 | Tarea | Comando |
 |---|---|
 | Ver la clave | `sudo grep API_KEY /opt/docker-api-proxy/.env` |
-| Rotar la clave | editar `.env` y `cd /opt/docker-api-proxy && sudo docker compose up -d --force-recreate` |
+| Rotar la clave (aleatoria) | `curl -fsSL https://raw.githubusercontent.com/LIN-Foundry/docker/main/set-key.sh \| sudo sh` |
+| Poner una clave manual | `curl -fsSL https://raw.githubusercontent.com/LIN-Foundry/docker/main/set-key.sh \| sudo sh -s -- MI_CLAVE` (A-Z a-z 0-9 - _, mín. 32) |
 | Varias claves | agregar `"clave" 1;` en el `map` de `templates/default.conf.template` |
 | Logs / intentos fallidos | `docker logs docker-api-proxy \| grep ' 401 '` |
 | Desinstalar | `cd /opt/docker-api-proxy && sudo docker compose down && sudo rm -rf /opt/docker-api-proxy` |
